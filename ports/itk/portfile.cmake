@@ -18,6 +18,20 @@ file(REMOVE_RECURSE
     "${SOURCE_PATH}/Modules/ThirdParty/HDF5/src/CMakeLists.txt"
 )
 
+if("vtk" IN_LIST FEATURES)
+    set(Module_ITKVtkGlue ON)
+else()
+    set(Module_ITKVtkGlue OFF)
+endif()
+
+# directory path length needs to be shorter than 50 characters
+set(ITK_BUILD_DIR ${CURRENT_BUILDTREES_DIR}/ITK)
+if(EXISTS ${ITK_BUILD_DIR})
+  file(REMOVE_RECURSE ${ITK_BUILD_DIR})
+endif()
+file(RENAME ${SOURCE_PATH} ${ITK_BUILD_DIR})
+set(SOURCE_PATH "${ITK_BUILD_DIR}")
+
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
     PREFER_NINJA
@@ -47,10 +61,13 @@ vcpkg_configure_cmake(
         -DITK_WRAP_PYTHON=OFF
         #-DITK_PYTHON_VERSION=3
 
-        # -DModule_ITKVtkGlue=ON # this option requires VTK to be a dependency in CONTROL file. VTK depends on HDF5!
         # -DModule_IOSTL=ON # example how to turn on a non-default module
         # -DModule_MorphologicalContourInterpolation=ON # example how to turn on a remote module
         # -DModule_RLEImage=ON # example how to turn on a remote module
+        # HDF5 must NOT be installed, otherwise it causes: ...\installed\x64-windows-static\include\H5Tpkg.h(25): fatal error C1189: #error:  "Do not include this file outside the H5T package!"
+        -DITK_USE_SYSTEM_HDF5=ON # if ON, causes: ...\buildtrees\itk\x64-windows-static-rel\Modules\ThirdParty\HDF5\src\itk_H5Cpp.h(25): fatal error C1083: Cannot open include file: 'H5Cpp.h': No such file or directory
+
+        -DModule_ITKVtkGlue=${Module_ITKVtkGlue} # this option requires VTK to be a dependency in CONTROL file. VTK depends on HDF5!
         ${ADDITIONAL_OPTIONS}
 )
 
