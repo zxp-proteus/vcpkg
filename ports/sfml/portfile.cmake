@@ -36,5 +36,5 @@ if(EXISTS ${CURRENT_PACKAGES_DIR}/lib/sfml-main.lib)
     file(REMOVE ${CURRENT_PACKAGES_DIR}/debug/lib/sfml-main-d.lib)
 endif()
 
-
 file(INSTALL ${SOURCE_PATH}/license.md DESTINATION ${CURRENT_PACKAGES_DIR}/share/sfml RENAME copyright)
+file(INSTALL ${SOURCE_PATH}/cmake/Modules/FindSFML.cmake DESTINATION ${CURRENT_PACKAGES_DIR}/share/sfml)
