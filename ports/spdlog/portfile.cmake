@@ -6,20 +6,23 @@ vcpkg_from_github(
     REF v0.16.3
     SHA512 6e08473825cf97dfb10b0e919b77996c1023bbfb583d851e961ec4a95094e4afffd1fc6f6e7e728ce8c2c69c9fb280c59f8d6494b50224bdf8cc68914ffd21e8
     HEAD_REF master
+    PATCHES
+        "${CMAKE_CURRENT_LIST_DIR}/fmt.patch"
+        "${CMAKE_CURRENT_LIST_DIR}/fmt-2.patch"
 )
+
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/include/spdlog/fmt/bundled)
 
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
     PREFER_NINJA
     OPTIONS
-        -DSPDLOG_BUILD_TESTING=OFF
+#        -DSPDLOG_BUILD_TESTING=OFF
 )
 
 vcpkg_install_cmake()
 
-# Move cmake files, ensuring they will be 3 directories up the import prefix
-file(MAKE_DIRECTORY ${CURRENT_PACKAGES_DIR}/share/spdlog)
-file(RENAME ${CURRENT_PACKAGES_DIR}/lib/cmake/spdlog/ ${CURRENT_PACKAGES_DIR}/share/spdlog/cmake)
+vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/spdlog)
 
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug)
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/lib)

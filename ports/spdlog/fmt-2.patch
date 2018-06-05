@@ -1,0 +1,119 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 52d2953..f5f7f52 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -23,6 +23,8 @@ endif()
+ # spdlog target
+ #---------------------------------------------------------------------------------------
+ add_library(spdlog INTERFACE)
++find_package(fmt CONFIG REQUIRED)
++target_link_libraries(spdlog INTERFACE fmt::fmt)
+ 
+ option(SPDLOG_BUILD_EXAMPLES "Build examples" OFF)
+ cmake_dependent_option(SPDLOG_BUILD_TESTING
+diff --git a/include/spdlog/details/logger_impl.h b/include/spdlog/details/logger_impl.h
+index 86a25c5..f22ede3 100644
+--- a/include/spdlog/details/logger_impl.h
++++ b/include/spdlog/details/logger_impl.h
+@@ -67,9 +67,9 @@ inline void spdlog::logger::log(level::level_enum lvl, const char* fmt, const Ar
+         details::log_msg log_msg(&_name, lvl);
+ 
+ #if defined(SPDLOG_FMT_PRINTF)
+-        fmt::printf(log_msg.raw, fmt, args...);
++        fmt::printf(log_msg.raw.buf, fmt, args...);
+ #else
+-        fmt::format_to(log_msg.raw, fmt, args...);
++        fmt::format_to(log_msg.raw.buf, fmt, args...);
+ #endif
+         _sink_it(log_msg);
+     }
+@@ -350,7 +350,7 @@ inline void spdlog::logger::_default_err_handler(const std::string &msg)
+     char date_buf[100];
+     std::strftime(date_buf, sizeof(date_buf), "%Y-%m-%d %H:%M:%S", &tm_time);
+     details::log_msg  err_msg;
+-    fmt::format_to(err_msg.formatted.buf, "[*** LOG ERROR ***] [{}] [{}] [{}]{}", name(), msg, date_buf, details::os::eol);
++    fmt::format_to(err_msg.formatted.buf, "[*** LOG ERROR ***] [{}] [{}] [{}]{}", name(), msg, date_buf, details::os::eol);
+     sinks::stderr_sink_mt::instance()->log(err_msg);
+     _last_err_time = now;
+ }
+diff --git a/include/spdlog/fmt/fmt.h b/include/spdlog/fmt/fmt.h
+index 4d4b1a5..6f7fdae 100644
+--- a/include/spdlog/fmt/fmt.h
++++ b/include/spdlog/fmt/fmt.h
+@@ -43,6 +43,7 @@ namespace spdlog
+             MemoryWriter& operator<<(const T& t)
+             {
+                 fmt::format_to(buf, "{}", t);
++                return *this;
+             }
+ 
+             auto data() const { return buf.data(); }
+diff --git a/tests/file_log.cpp b/tests/file_log.cpp
+index 086bd5e..40520bf 100644
+--- a/tests/file_log.cpp
++++ b/tests/file_log.cpp
+@@ -103,8 +103,7 @@ TEST_CASE("daily_logger", "[daily_logger]]")
+     //calculate filename (time based)
+     std::string basename = "logs/daily_log";
+     std::tm tm = spdlog::details::os::localtime();
+-    fmt::MemoryWriter w;
+-    w.write("{}_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}", basename, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min);
++    auto filename = fmt::format("{}_{:04d}-{:02d}-{:02d}_{:02d}-{:02d}", basename, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min);
+ 
+     auto logger = spdlog::daily_logger_mt("logger", basename, 0, 0);
+     logger->flush_on(spdlog::level::info);
+@@ -117,7 +116,6 @@ TEST_CASE("daily_logger", "[daily_logger]]")
+ #endif
+     }
+ 
+-    auto filename = w.str();
+     REQUIRE(count_lines(filename) == 10);
+ }
+ 
+@@ -132,8 +130,7 @@ TEST_CASE("daily_logger with dateonly calculator", "[daily_logger_dateonly]]")
+     //calculate filename (time based)
+     std::string basename = "logs/daily_dateonly";
+     std::tm tm = spdlog::details::os::localtime();
+-    fmt::MemoryWriter w;
+-    w.write("{}_{:04d}-{:02d}-{:02d}", basename, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
++    auto filename = fmt::format("{}_{:04d}-{:02d}-{:02d}", basename, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+ 
+     auto logger = spdlog::create<sink_type>("logger", basename, 0, 0);
+     for (int i = 0; i < 10; ++i)
+@@ -145,7 +142,6 @@ TEST_CASE("daily_logger with dateonly calculator", "[daily_logger_dateonly]]")
+ #endif
+     }
+     logger->flush();
+-    auto filename = w.str();
+     REQUIRE(count_lines(filename) == 10);
+ }
+ 
+@@ -154,9 +150,7 @@ struct custom_daily_file_name_calculator
+     static spdlog::filename_t calc_filename(const spdlog::filename_t& basename)
+     {
+         std::tm tm = spdlog::details::os::localtime();
+-        fmt::MemoryWriter w;
+-        w.write("{}{:04d}{:02d}{:02d}", basename, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+-        return w.str();
++        return fmt::format("{}{:04d}{:02d}{:02d}", basename, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+     }
+ };
+ 
+@@ -170,8 +164,7 @@ TEST_CASE("daily_logger with custom calculator", "[daily_logger_custom]]")
+     //calculate filename (time based)
+     std::string basename = "logs/daily_dateonly";
+     std::tm tm = spdlog::details::os::localtime();
+-    fmt::MemoryWriter w;
+-    w.write("{}{:04d}{:02d}{:02d}", basename, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
++    auto filename = fmt::format("{}{:04d}{:02d}{:02d}", basename, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+ 
+     auto logger = spdlog::create<sink_type>("logger", basename, 0, 0);
+     for (int i = 0; i < 10; ++i)
+@@ -184,7 +177,6 @@ TEST_CASE("daily_logger with custom calculator", "[daily_logger_custom]]")
+     }
+ 
+     logger->flush();
+-    auto filename = w.str();
+     REQUIRE(count_lines(filename) == 10);
+ }
+ 
