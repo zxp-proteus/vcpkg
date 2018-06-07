@@ -1,15 +1,11 @@
 include(vcpkg_common_functions)
-set(SOURCE_PATH ${CURRENT_BUILDTREES_DIR}/src/mongo-c-driver-1.9.2)
 
-vcpkg_download_distfile(ARCHIVE
-    URLS "https://github.com/mongodb/mongo-c-driver/archive/1.9.2.tar.gz"
-    FILENAME "mongo-c-driver-1.9.2.tar.gz"
+vcpkg_from_github(
+    OUT_SOURCE_PATH SOURCE_PATH
+    REPO mongodb/mongo-cxx-driver
+    REF 1.9.2
     SHA512 a2c819da77aef93ce261093e98e8e8c41c449af56bd03d875e2838a067ae71b5ceb16fed2fb8df9458c84310451b813464377592806fc9ac39d9df2f4ddba83b
-)
-vcpkg_extract_source_archive(${ARCHIVE})
-
-vcpkg_apply_patches(
-    SOURCE_PATH ${SOURCE_PATH}
+    HEAD_REF master
     PATCHES ${CMAKE_CURRENT_LIST_DIR}/fix-uwp.patch
 )
 
