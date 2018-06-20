@@ -467,7 +467,7 @@ namespace vcpkg::Build
 
         if (pre_build_info.cmake_system_name == "Linux")
         {
-            abi_tag_entries.emplace_back(AbiEntry{"toolchain", "1"});
+            abi_tag_entries.emplace_back(AbiEntry{"toolchain", "2"});
         }
 
         abi_tag_entries.emplace_back(AbiEntry{"triplet", pre_build_info.triplet_abi_tag});
