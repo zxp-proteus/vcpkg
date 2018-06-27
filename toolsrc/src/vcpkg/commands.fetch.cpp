@@ -2,6 +2,7 @@
 
 #include <vcpkg/base/archives.h>
 #include <vcpkg/base/checks.h>
+#include <vcpkg/base/chrono.h>
 #include <vcpkg/base/downloads.h>
 #include <vcpkg/base/stringrange.h>
 #include <vcpkg/base/strings.h>
@@ -9,7 +10,6 @@
 #include <vcpkg/base/util.h>
 #include <vcpkg/commands.h>
 #include <vcpkg/help.h>
-#
 
 namespace vcpkg::Commands::Fetch
 {
@@ -151,15 +151,21 @@ namespace vcpkg::Commands::Fetch
 
         std::vector<PathAndVersion> get_versions(const std::vector<fs::path>& candidate_paths) const
         {
+            auto&& fs = Files::get_real_filesystem();
+            auto timer = Chrono::ElapsedTimer::create_started();
+
             std::vector<PathAndVersion> output;
             for (auto&& p : candidate_paths)
             {
+                if (!fs.exists(p)) continue;
                 auto maybe_version = this->get_version(p);
                 if (const auto version = maybe_version.get())
                 {
                     output.emplace_back(PathAndVersion{p, *version});
+                    return output;
                 }
             }
+
             return output;
         }
     };
@@ -254,7 +260,7 @@ namespace vcpkg::Commands::Fetch
 #else
             static const ToolData TOOL_DATA = ToolData{{3, 5, 1}, ""};
 #endif
-            const std::vector<fs::path> from_path = Files::find_from_PATH("cmake");
+            const std::vector<fs::path> from_path = paths.get_filesystem().find_from_PATH("cmake");
             candidate_paths.insert(candidate_paths.end(), from_path.cbegin(), from_path.cend());
 
             const auto& program_files = System::get_program_files_platform_bitness();
@@ -315,7 +321,7 @@ namespace vcpkg::Commands::Fetch
 
             std::vector<fs::path> candidate_paths;
             candidate_paths.push_back(TOOL_DATA.exe_path);
-            const std::vector<fs::path> from_path = Files::find_from_PATH("ninja");
+            const std::vector<fs::path> from_path = paths.get_filesystem().find_from_PATH("ninja");
             candidate_paths.insert(candidate_paths.end(), from_path.cbegin(), from_path.cend());
 
             const NinjaVersionProvider version_provider{};
@@ -360,7 +366,7 @@ Type 'NuGet help <command>' for help on a specific command.
 
             std::vector<fs::path> candidate_paths;
             candidate_paths.push_back(TOOL_DATA.exe_path);
-            const std::vector<fs::path> from_path = Files::find_from_PATH("nuget");
+            const std::vector<fs::path> from_path = paths.get_filesystem().find_from_PATH("nuget");
             candidate_paths.insert(candidate_paths.end(), from_path.cbegin(), from_path.cend());
 
             const NugetVersionProvider version_provider{};
@@ -408,7 +414,7 @@ git version 2.17.1.windows.2
 #if defined(_WIN32)
             candidate_paths.push_back(TOOL_DATA.exe_path);
 #endif
-            const std::vector<fs::path> from_path = Files::find_from_PATH("git");
+            const std::vector<fs::path> from_path = paths.get_filesystem().find_from_PATH("git");
             candidate_paths.insert(candidate_paths.end(), from_path.cbegin(), from_path.cend());
 
             const auto& program_files = System::get_program_files_platform_bitness();
