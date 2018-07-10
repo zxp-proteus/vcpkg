@@ -10,15 +10,11 @@ vcpkg_from_github(
     REF apache-arrow-0.9.0
     SHA512 789d0948eee3af20eb922e09c14eb721f20fa041ca3c0cf57bd869718fc9919b45590bd72714efafdf19196f35abb6bdbe0a3972ca74fcc2af92c1f9ade8fa00
     HEAD_REF master
+    PATCHES
+        "${CMAKE_CURRENT_LIST_DIR}/all.patch"
 )
 
 set(CPP_SOURCE_PATH "${SOURCE_PATH}/cpp")
-
-vcpkg_apply_patches(
-    SOURCE_PATH ${SOURCE_PATH}
-    PATCHES
-    "${CMAKE_CURRENT_LIST_DIR}/all.patch"
-)
 
 string(COMPARE EQUAL ${VCPKG_LIBRARY_LINKAGE} "dynamic" ARROW_BUILD_SHARED)
 string(COMPARE EQUAL ${VCPKG_LIBRARY_LINKAGE} "static" ARROW_BUILD_STATIC)
